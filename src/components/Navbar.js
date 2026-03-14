@@ -18,25 +18,22 @@ function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="text-gray-600 hover:text-indigo-600 font-medium transition-colors duration-200 relative group"
             >
               Home
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-indigo-600 transition-all duration-300 group-hover:w-full"></span>
             </Link>
-            <Link 
-              to="/about" 
+            <Link
+              to="/about"
               className="text-gray-600 hover:text-indigo-600 font-medium transition-colors duration-200 relative group"
             >
               About
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-indigo-600 transition-all duration-300 group-hover:w-full"></span>
             </Link>
-            
-            {/* CTA Button */}
-            <button className="px-5 py-2.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 transition-all duration-200">
-              Get Started
-            </button>
+
+
           </div>
 
           {/* Mobile menu button (Simplified for now) */}
