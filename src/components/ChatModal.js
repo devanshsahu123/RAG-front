@@ -1,11 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 function ChatModal({ document, onClose }) {
+  const { token } = useAuth();
   const [messages, setMessages] = useState([
     {
       id: 1,
       role: 'assistant',
-      text: `Hi! I've loaded **${document.name}**. Ask me anything about this document.`,
+      text: `Hi! I've loaded **${document.name}**. Ask me anything about this document.${
+        document.status !== 'Ready'
+          ? '\n\n⏳ Note: This document is still being processed. Please wait a moment before asking questions.'
+          : ''
+      }`,
     },
   ]);
   const [input, setInput] = useState('');
@@ -27,27 +33,41 @@ function ChatModal({ document, onClose }) {
     setLoading(true);
 
     try {
-      // TODO: Replace with real RAG API call
-      // const res = await fetch('/api/chat', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-      //   body: JSON.stringify({ documentId: document.id, message: text }),
-      // });
-      // const data = await res.json();
+      const res = await fetch('http://localhost:3001/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ documentId: document._id, message: text }),
+      });
 
-      // ── Mock response ──────────────────────────────────────────
-      await new Promise((r) => setTimeout(r, 1000));
-      const mockReply = `This is a mock answer to: "${text}". Connect your RAG backend to get real answers from **${document.name}**.`;
-      // ──────────────────────────────────────────────────────────
+      const data = await res.json();
 
+      if (res.ok && data.status === 'success') {
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now() + 1, role: 'assistant', text: data.data.reply },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            role: 'assistant',
+            text: `⚠️ ${data.message || 'Something went wrong. Please try again.'}`,
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error('Chat error:', err);
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, role: 'assistant', text: mockReply },
-      ]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now() + 1, role: 'assistant', text: 'Something went wrong. Please try again.' },
+        {
+          id: Date.now() + 1,
+          role: 'assistant',
+          text: '⚠️ Could not reach the server. Make sure the backend is running.',
+        },
       ]);
     } finally {
       setLoading(false);
@@ -67,7 +87,8 @@ function ChatModal({ document, onClose }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       {/* Modal panel */}
-      <div className="relative bg-white w-full sm:max-w-2xl sm:mx-4 sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col overflow-hidden"
+      <div
+        className="relative bg-white w-full sm:max-w-2xl sm:mx-4 sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col overflow-hidden"
         style={{ height: '85vh', maxHeight: '700px' }}
       >
         {/* Header */}
@@ -108,7 +129,7 @@ function ChatModal({ document, onClose }) {
                 </div>
               )}
               <div
-                className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm
+                className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap
                   ${msg.role === 'user'
                     ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-br-sm'
                     : 'bg-white text-gray-800 border border-gray-100 rounded-bl-sm'
