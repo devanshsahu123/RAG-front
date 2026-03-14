@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ChatModal from './ChatModal';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { useAuth } from '../context/AuthContext';
 
 function DocumentList() {
   const [chatDoc, setChatDoc] = useState(null);
+  const [docToDelete, setDocToDelete] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const { token } = useAuth();
@@ -63,9 +65,9 @@ function DocumentList() {
   useEffect(() => {
     const handleUploadEvent = () => {
       if (page === 1) {
-        fetchDocuments(1); // just refresh if already on page 1
+        fetchDocuments(1); 
       } else {
-        setPage(1); // resetting to page 1 will auto trigger the fetch effect map
+        setPage(1); 
       }
     };
     window.addEventListener('documentUploaded', handleUploadEvent);
@@ -99,6 +101,36 @@ function DocumentList() {
     } catch (error) {
       console.error('Error downloading document:', error);
       alert('Could not download the document. Ensure the backend is running and the file exists.');
+    }
+  };
+
+  const handleDeleteConfirm = async (doc) => {
+    try {
+      if (!token) return;
+      const response = await fetch(`http://localhost:3001/api/upload/documents/${doc._id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete document');
+      }
+
+      setDocToDelete(null);
+      // Determine what page to fetch on success
+      if (documents.length === 1 && page > 1) {
+        // If it was the last doc on the current page, go back one page
+        setPage(page - 1);
+      } else {
+        // Otherwise just reload this page
+        fetchDocuments(page);
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Failed to delete document. Please try again.');
+      setDocToDelete(null);
     }
   };
 
@@ -208,6 +240,7 @@ function DocumentList() {
 
                         {/* Delete button */}
                         <button
+                          onClick={() => setDocToDelete(doc)}
                           className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                           title="Delete"
                         >
@@ -262,6 +295,15 @@ function DocumentList() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {docToDelete && (
+        <DeleteConfirmationModal
+          document={docToDelete}
+          onClose={() => setDocToDelete(null)}
+          onConfirm={handleDeleteConfirm}
+        />
+      )}
 
       {/* Chat Modal */}
       {chatDoc && (
