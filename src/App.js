@@ -7,7 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
-    <AuthProvider>
+    <AuthProvider> 
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex flex-col font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-900">
         <Navbar />
         <main className="flex-grow flex flex-col relative z-10 w-full">

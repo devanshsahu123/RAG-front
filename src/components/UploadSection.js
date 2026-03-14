@@ -44,6 +44,14 @@ function UploadSection() {
     try {
       await uploadDocument(file);
       setUploadStatus('success');
+      // Trigger a custom event to tell DocumentList to refresh
+      window.dispatchEvent(new Event('documentUploaded'));
+      
+      // Auto reset after 3 seconds
+      setTimeout(() => {
+        setUploadStatus('idle');
+        setSelectedFile(null);
+      }, 3000);
     } catch (err) {
       setUploadStatus('error');
       setUploadError(err.message || 'Upload failed. Please try again.');
@@ -139,7 +147,7 @@ function UploadSection() {
               {selectedFile ? selectedFile.name : 'Click to upload or drag & drop'}
             </h3>
             <p className="text-gray-500 mb-6 text-sm">
-              {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB · PDF` : 'PDF only (max. 50MB)'}
+               {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB · PDF` : 'PDF only (max. 50MB)'}
             </p>
 
             {/* Error message */}
@@ -157,7 +165,7 @@ function UploadSection() {
             {uploadStatus === 'success' && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Uploaded successfully!
+                Uploaded successfully! Refreshing...
               </span>
             )}
 
@@ -167,7 +175,7 @@ function UploadSection() {
               disabled={uploadStatus === 'uploading'}
               className="relative overflow-hidden rounded-full bg-white px-8 py-3 font-semibold text-indigo-600 shadow-sm ring-1 ring-inset ring-indigo-200 hover:bg-gray-50 hover:ring-indigo-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {uploadStatus === 'uploading' ? 'Uploading…' : selectedFile ? 'Change File' : 'Select PDF'}
+               {uploadStatus === 'uploading' ? 'Uploading…' : selectedFile ? 'Change File' : 'Select PDF'}
             </button>
           </div>
         </div>
