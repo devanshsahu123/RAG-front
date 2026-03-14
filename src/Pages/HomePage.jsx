@@ -1,34 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import UploadSection from '../components/UploadSection';
 import DocumentList from '../components/DocumentList';
 import LoginModal from '../components/LoginModal';
+import { useAuth } from '../context/AuthContext';
 
 function HomePage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const checkAuth = () => {
-    const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId');
-    setIsAuthenticated(!!(token && userId));
-  };
-
-  useEffect(() => {
-    checkAuth();
-    // Re-check whenever localStorage changes (e.g. after LoginModal saves token)
-    window.addEventListener('storage', checkAuth);
-    return () => window.removeEventListener('storage', checkAuth);
-  }, []);
-
-  // Also expose a global trigger so LoginModal inside UploadSection can notify HomePage
-  useEffect(() => {
-    const handler = () => checkAuth();
-    window.addEventListener('auth:updated', handler);
-    return () => window.removeEventListener('auth:updated', handler);
-  }, []);
-
   const handleLoginSuccess = () => {
-    checkAuth();
     setShowLoginModal(false);
   };
 
@@ -52,7 +32,7 @@ function HomePage() {
           onClick={() => setShowLoginModal(true)}
           className="px-8 py-3 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/40 hover:-translate-y-0.5 transform transition-all duration-200"
         >
-          Sign In
+          Sign In / Register
         </button>
 
         {showLoginModal && (

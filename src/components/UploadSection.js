@@ -1,38 +1,35 @@
 import React, { useState, useRef } from 'react';
 import LoginModal from './LoginModal';
+import { useAuth } from '../context/AuthContext';
+import { uploadDocument } from '../api/upload';
 
 function UploadSection() {
+  const { isAuthenticated } = useAuth();
   const [isDragging, setIsDragging] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadError, setUploadError] = useState('');
+  const [uploadStatus, setUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'success' | 'error'
   const fileInputRef = useRef(null);
 
-  // ── Auth helpers ────────────────────────────────────────────
-  const isAuthenticated = () => {
-    const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId');
-    return !!(token && userId);
-  };
-
-  // ── Guard: open modal if not logged in, otherwise open picker ──
+  // ── Guard: open modal if not logged in ──────────────────────
   const handleUploadIntent = () => {
-    if (!isAuthenticated()) {
+    if (!isAuthenticated) {
       setShowLoginModal(true);
       return;
     }
     fileInputRef.current?.click();
   };
 
-  // Called by LoginModal after successful login
   const handleLoginSuccess = () => {
     setShowLoginModal(false);
     fileInputRef.current?.click();
   };
 
-  // ── File validation (PDF only) ──────────────────────────────
-  const validateAndSetFile = (file) => {
+  // ── File validation + real API upload ───────────────────────
+  const validateAndUpload = async (file) => {
     setUploadError('');
+    setUploadStatus('idle');
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
@@ -42,11 +39,18 @@ function UploadSection() {
     }
 
     setSelectedFile(file);
-    // TODO: trigger actual upload API call here
-    console.log('File ready to upload:', file.name);
+    setUploadStatus('uploading');
+
+    try {
+      await uploadDocument(file);
+      setUploadStatus('success');
+    } catch (err) {
+      setUploadStatus('error');
+      setUploadError(err.message || 'Upload failed. Please try again.');
+    }
   };
 
-  // ── Drag & Drop handlers ────────────────────────────────────
+  // ── Drag & Drop handlers ─────────────────────────────────────
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -59,19 +63,18 @@ function UploadSection() {
     e.stopPropagation();
     setIsDragging(false);
 
-    if (!isAuthenticated()) {
+    if (!isAuthenticated) {
       setShowLoginModal(true);
       return;
     }
 
     const file = e.dataTransfer.files?.[0];
-    validateAndSetFile(file);
+    validateAndUpload(file);
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
-    validateAndSetFile(file);
-    // Reset so same file can be re-selected
+    validateAndUpload(file);
     e.target.value = '';
   };
 
@@ -144,20 +147,27 @@ function UploadSection() {
               <p className="text-sm text-red-500 bg-red-50 rounded-lg px-4 py-2 mb-4">{uploadError}</p>
             )}
 
-            {/* Success badge */}
-            {selectedFile && !uploadError && (
+            {/* Status badges */}
+            {uploadStatus === 'uploading' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 mb-4 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                Uploading…
+              </span>
+            )}
+            {uploadStatus === 'success' && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                File selected
+                Uploaded successfully!
               </span>
             )}
 
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); handleUploadIntent(); }}
-              className="relative overflow-hidden rounded-full bg-white px-8 py-3 font-semibold text-indigo-600 shadow-sm ring-1 ring-inset ring-indigo-200 hover:bg-gray-50 hover:ring-indigo-300 transition-all duration-200"
+              disabled={uploadStatus === 'uploading'}
+              className="relative overflow-hidden rounded-full bg-white px-8 py-3 font-semibold text-indigo-600 shadow-sm ring-1 ring-inset ring-indigo-200 hover:bg-gray-50 hover:ring-indigo-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {selectedFile ? 'Change File' : 'Select PDF'}
+              {uploadStatus === 'uploading' ? 'Uploading…' : selectedFile ? 'Change File' : 'Select PDF'}
             </button>
           </div>
         </div>
