@@ -29,6 +29,9 @@ function LoginModal({ onClose, onLoginSuccess }) {
       localStorage.setItem('token', mockToken);
       localStorage.setItem('userId', mockUserId);
 
+      // Notify any listeners (e.g. HomePage) that auth state changed
+      window.dispatchEvent(new Event('auth:updated'));
+
       onLoginSuccess();
     } catch (err) {
       setError('Login failed. Please try again.');
